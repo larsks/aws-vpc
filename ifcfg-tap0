@@ -1,0 +1,7 @@
+DEVICE="tap0"
+TYPE=Tap
+BRIDGE=br0
+NM_CONTROLLED="no"
+BOOTPROTO="none"
+ONBOOT="yes"
+OWNER=openvpn

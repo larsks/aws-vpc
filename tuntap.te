@@ -1,0 +1,12 @@
+
+module tuntap 1.0;
+
+require {
+	type ifconfig_t;
+	type unconfined_t;
+	class tun_socket { relabelfrom relabelto create };
+}
+
+#============= ifconfig_t ==============
+allow ifconfig_t self:tun_socket { relabelfrom relabelto create };
+allow ifconfig_t unconfined_t:tun_socket relabelfrom;
