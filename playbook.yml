@@ -1,13 +1,20 @@
+# This is an Ansible (http://www.ansibleworks.com/) that will configure
+# host as an OpenVPN gateway for a network specified by remote_network_addr
+# and remote_network_mask.  It will configure the host identified as
+# vpngw-local as a cliennt of the remote VPN instance, with appropriate
+# routes configured to reach the remote network.
+#
+# The use case behind this playbook is using OpenVPN to make hosts in
+# an Amazon VPC environment accessible to local system.
 - hosts: vpngw-aws
   user: fedora
   sudo: true
   vars:
-  - aws_network_addr: 10.243.16.192
-  - aws_network_mask: 255.255.255.224
+  - remote_network_addr: 10.243.16.192
+  - remote_network_mask: 255.255.255.224
+  - remote_ptp_addr: 172.16.33.10
+  - local_ptp_addr: 172.16.33.1
   tasks:
-  - template: src=vpcgw-local.conf dest=/etc/openvpn/vpcgw.conf
-    delegate_to: localhost
-    notify: restart local openvpn
   - yum: name=$item state=installed
     with_items:
     - openvpn
@@ -15,6 +22,12 @@
     - bridge-utils
     - system-config-firewall-base
     - selinux-policy-devel
+  - template: src=vpcgw-local.conf dest=/etc/openvpn/vpcgw.conf
+    delegate_to: vpngw-local
+    notify: restart local openvpn
+  - template: src=vpcgw-aws.conf dest=/etc/openvpn/vpcgw.conf owner=root group=root mode=0644
+    notify:
+    - restart openvpn
   - file: path=/etc/selinux/local state=directory
   - copy: src=$item dest=/etc/selinux/local/
     with_items:
@@ -23,9 +36,6 @@
     - selinux/local_openvpn.te
     notify:
     - rebuild selinux modules
-  - copy: src=vpcgw-aws.conf dest=/etc/openvpn/vpcgw.conf owner=root group=root mode=0644
-    notify:
-    - restart openvpn
   - copy: src=vpcgw.key dest=/etc/openvpn/vpcgw.key owner=root group=root mode=0400
     notify:
     - restart openvpn
@@ -47,5 +57,5 @@
     command: /bin/systemctl restart iptables
   - name: restart local openvpn
     service: name=openvpn@vpcgw state=restarted
-    delegate_to: localhost
+    delegate_to: vpngw_local
 
