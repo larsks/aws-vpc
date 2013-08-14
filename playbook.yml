@@ -1,18 +1,3 @@
-#- hosts: all
-#  user: fedora
-#  sudo: true
-#  tasks:
-#  - template: src=checkvars.j2 dest=/tmp/hostvars.txt
-
-- hosts:
-  - vpngw-aws
-  - clients
-  user: fedora
-  sudo: true
-  tasks:
-  - ping:
-#   - shell: creates=/etc/sysconfig/yum-upgrade-flag yum -d1 -e0 -y upgrade && touch /etc/sysconfig/yum-upgrade-flag
-
 - hosts: vpngw-aws
   user: fedora
   sudo: true
