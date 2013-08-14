@@ -17,19 +17,31 @@
   - remote_ptp_addr: 172.16.33.10
   - local_ptp_addr: 172.16.33.1
   tasks:
+
+  # Install a required packages.
   - yum: name=$item state=installed
     with_items:
     - openvpn
-    - nmap
-    - bridge-utils
-    - system-config-firewall-base
     - selinux-policy-devel
+
+  # Generate local and remote OpenVPN configuration files.
   - template: src=vpcgw-local.conf dest=/etc/openvpn/vpcgw.conf
     delegate_to: vpngw-local
     notify: restart local openvpn
   - template: src=vpcgw-aws.conf dest=/etc/openvpn/vpcgw.conf owner=root group=root mode=0644
     notify:
     - restart openvpn
+
+  # Install the shared secret.  Note that this is not part of the repository; you
+  # will need to generate it manually by running:
+  # openvpn --genkey --secret vpcgw.key
+  - copy: src=vpcgw.key dest=/etc/openvpn/vpcgw.key owner=root group=root mode=0400
+    notify:
+    - restart openvpn
+
+  # This muck is necessary because the selinux policy in Fedora 19
+  # does not have all the necessary permissions for OpenVPN to operate
+  # with selinux in enforcing mode.
   - file: path=/etc/selinux/local state=directory
   - copy: src=$item dest=/etc/selinux/local/
     with_items:
@@ -38,15 +50,16 @@
     - selinux/local_openvpn.te
     notify:
     - rebuild selinux modules
-  - copy: src=vpcgw.key dest=/etc/openvpn/vpcgw.key owner=root group=root mode=0400
-    notify:
-    - restart openvpn
+
+  #  Permit ip forwarding
   - copy: src=ip_forward.conf dest=/etc/sysctl.d/ip_forward.conf
     notify:
     - restart sysctl
   - copy: src=iptables dest=/etc/sysconfig/iptables
     notify:
     - restart iptables
+
+  # Make sure openvpn is enabled.
   - service: name=openvpn@vpcgw state=running enabled=true
   handlers:
   - name: rebuild selinux modules
@@ -60,4 +73,16 @@
   - name: restart local openvpn
     service: name=openvpn@vpcgw state=restarted
     delegate_to: vpngw_local
+
+# The OpenVPN configuration is generated in the previous play,
+# but we still need to install the shared secret.
+- hosts: vpngw-local
+  sudo: true
+  tasks:
+  - copy: src=vpcgw.key dest=/etc/openvpn/vpcgw.key owner=root group=root mode=0400
+    notify:
+    - restart openvpn
+  handlers:
+  - name: restart openvpn
+    command: /bin/systemctl restart openvpn@vpcgw
 
