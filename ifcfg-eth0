@@ -1,5 +1,0 @@
-DEVICE="eth0"
-BRIDGE=br0
-NM_CONTROLLED="no"
-BOOTPROTO="none"
-ONBOOT="yes"

@@ -1,7 +1,0 @@
-DEVICE=br0
-TYPE=Bridge
-NM_CONTROLLED="no"
-BOOTPROTO="dhcp"
-ONBOOT="yes"
-DELAY=0
-
