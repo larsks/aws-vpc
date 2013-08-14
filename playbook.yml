@@ -1,11 +1,13 @@
-# This is an Ansible (http://www.ansibleworks.com/) that will configure
-# host as an OpenVPN gateway for a network specified by remote_network_addr
-# and remote_network_mask.  It will configure the host identified as
-# vpngw-local as a cliennt of the remote VPN instance, with appropriate
-# routes configured to reach the remote network.
+# This is an Ansible (http://www.ansibleworks.com/) playbook that will
+# configure a host as an OpenVPN gateway for a network specified by
+# remote_network_addr and remote_network_mask.  It will configure the host
+# identified as vpngw-local as a client of the remote VPN instance, with
+# appropriate routes configured to reach the remote network.
 #
-# The use case behind this playbook is using OpenVPN to make hosts in
-# an Amazon VPC environment accessible to local system.
+# The use case behind this playbook is using OpenVPN as the VPN gateway
+# to instances running in an Amazon VPC.  This requires appropriately 
+# configuring the routing in your VPC environment.
+
 - hosts: vpngw-aws
   user: fedora
   sudo: true
