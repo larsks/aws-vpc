@@ -1,7 +1,28 @@
-- hosts: vpngw
+#- hosts: all
+#  user: fedora
+#  sudo: true
+#  tasks:
+#  - template: src=checkvars.j2 dest=/tmp/hostvars.txt
+
+- hosts:
+  - vpngw-aws
+  - clients
   user: fedora
   sudo: true
   tasks:
+  - ping:
+#   - shell: creates=/etc/sysconfig/yum-upgrade-flag yum -d1 -e0 -y upgrade && touch /etc/sysconfig/yum-upgrade-flag
+
+- hosts: vpngw-aws
+  user: fedora
+  sudo: true
+  vars:
+  - aws_network_addr: 10.243.16.192
+  - aws_network_mask: 255.255.255.224
+  tasks:
+  - template: src=vpcgw-local.conf dest=/etc/openvpn/vpcgw.conf
+    delegate_to: localhost
+    notify: restart local openvpn
   - yum: name=$item state=installed
     with_items:
     - openvpn
@@ -17,16 +38,29 @@
     - selinux/local_openvpn.te
     notify:
     - rebuild selinux modules
-  - copy: src=vpcgw.conf dest=/etc/openvpn/vpcgw.conf owner=root group=root mode=0644
+  - copy: src=vpcgw-aws.conf dest=/etc/openvpn/vpcgw.conf owner=root group=root mode=0644
+    notify:
+    - restart openvpn
   - copy: src=vpcgw.key dest=/etc/openvpn/vpcgw.key owner=root group=root mode=0400
+    notify:
+    - restart openvpn
   - copy: src=ip_forward.conf dest=/etc/sysctl.d/ip_forward.conf
     notify:
-    - reload sysctl
-  - command: /usr/sbin/lokkit -s ssh -s openvpn --update
+    - restart sysctl
+  - copy: src=iptables dest=/etc/sysconfig/iptables
+    notify:
+    - restart iptables
   - service: name=openvpn@vpcgw state=running enabled=true
   handlers:
   - name: rebuild selinux modules
     command: make -C /etc/selinux/local install
-  - name: reload sysctl
+  - name: restart sysctl
     command: /bin/systemctl restart systemd-sysctl
- 
+  - name: restart openvpn
+    command: /bin/systemctl restart openvpn@vpcgw
+  - name: restart iptables
+    command: /bin/systemctl restart iptables
+  - name: restart local openvpn
+    service: name=openvpn@vpcgw state=restarted
+    delegate_to: localhost
+
