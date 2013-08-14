@@ -1,0 +1,9 @@
+module local 1.0;
+
+require {
+	type ifconfig_t;
+	class tun_socket create;
+}
+
+#============= ifconfig_t ==============
+allow ifconfig_t self:tun_socket create;

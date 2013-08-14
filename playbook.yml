@@ -8,25 +8,25 @@
     - nmap
     - bridge-utils
     - system-config-firewall-base
-  - copy: src=vpcbridge.conf dest=/etc/openvpn/vpcbridge.conf owner=root group=root mode=0644
-  - copy: src=vpcbridge.key dest=/etc/openvpn/vpcbridge.key owner=root group=root mode=0400
-  - copy: src=ifcfg-br0 dest=/etc/sysconfig/network-scripts/ifcfg-br0
-  - copy: src=ifcfg-eth0 dest=/etc/sysconfig/network-scripts/ifcfg-eth0
-  - copy: src=ifcfg-tap0 dest=/etc/sysconfig/network-scripts/ifcfg-tap0
-  - copy: src=tuntap.pp dest=/usr/share/selinux/targeted/tuntap.pp
+    - selinux-policy-devel
+  - file: path=/etc/selinux/local state=directory
+  - copy: src=$item dest=/etc/selinux/local/
+    with_items:
+    - selinux/Makefile
+    - selinux/local_tuntap.te
+    - selinux/local_openvpn.te
     notify:
-    - selinux load tuntap
+    - rebuild selinux modules
+  - copy: src=vpcgw.conf dest=/etc/openvpn/vpcgw.conf owner=root group=root mode=0644
+  - copy: src=vpcgw.key dest=/etc/openvpn/vpcgw.key owner=root group=root mode=0400
   - copy: src=ip_forward.conf dest=/etc/sysctl.d/ip_forward.conf
     notify:
     - reload sysctl
   - command: /usr/sbin/lokkit -s ssh -s openvpn --update
+  - service: name=openvpn@vpcgw state=running enabled=true
   handlers:
-  - name: selinux load tuntap
-    command: /usr/sbin/semodule -s targeted -i /usr/share/selinux/targeted/tuntap.pp
+  - name: rebuild selinux modules
+    command: make -C /etc/selinux/local install
   - name: reload sysctl
     command: /bin/systemctl restart systemd-sysctl
-  
-- hosts: clients
-  user: fedora
-  sudo: true
-
+ 

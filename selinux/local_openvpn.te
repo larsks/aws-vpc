@@ -1,0 +1,13 @@
+module local_openvpn 1.0;
+
+require {
+	type ifconfig_t;
+	type openvpn_t;
+	class tun_socket relabelfrom;
+}
+
+#============= ifconfig_t ==============
+allow ifconfig_t openvpn_t:tun_socket relabelfrom;
+
+#============= openvpn_t ==============
+allow openvpn_t ifconfig_t:tun_socket relabelfrom;
